@@ -1,0 +1,7 @@
+tokens.bin
+*.log
+nanollama
+nanollama_ckpt.bin
+nanollama_final.bin
+*.o
+*.dSYM
