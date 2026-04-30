@@ -36,7 +36,7 @@ Standard Llama 3 nano. No GQA, no LoRA, no quantization at training time.
 
 | metric | value |
 |--------|-------|
-| optimizer | Chuck (notorch native, AdamW + 9 levels of awareness) |
+| optimizer | Chuck (notorch native, 9 levels of awareness — see notorch repo) |
 | schedule | cosine, peak 1.5e-4 → min 1.5e-5, warmup 200 |
 | effective batch | 1024 tokens (ctx 512 × accum 2) |
 | total steps | 15,000 |
