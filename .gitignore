@@ -1,7 +1,10 @@
 tokens.bin
 *.log
 nanollama
+infer_nanollama
 nanollama_ckpt.bin
+nanollama_ckpt_*.bin
 nanollama_final.bin
+nanollama_pretrain_final.bin
 *.o
 *.dSYM
