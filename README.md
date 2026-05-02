@@ -2,17 +2,22 @@
 
 Llama 3 nano (89M) trained from scratch on [notorch](https://github.com/ariannamethod/notorch). No PyTorch. No GPU. Pure C autograd + Accelerate BLAS on a 2019 Intel MacBook Pro.
 
-**Status: ALIVE — proof of life confirmed 2026-04-29.**
+**Status: ALIVE.** Proof of life 2026-04-29. Continued pretraining (CPT) finished 2026-05-02.
+
+| stage | wallclock | tokens seen | best train loss |
+|-------|-----------|-------------|-----------------|
+| pretrain (15K eff steps) | 6.67 days | 22.86M × 7.7B forward = 7.7B token-ops | 3.16 |
+| CPT (10K eff steps, lr 3e-5 → 3e-6) | 4.5 days | 22.86M × 5.1B = 5.1B more | **2.68** |
+| total project | **11.5 days** | 12.8B token-ops | drop −7.72 from random init 10.40 |
 
 ```
-$ ./infer_nanollama nanollama_final.bin
-prompt: Once upon a time
-output: when the word had had the way to be seen.
-        Capon, they had a good place of time and the two times for the heart of a single day.
-        What was this? The other person, like a woman, was the…
+$ python3 generate.py "Once upon a time" --T 0.7 --k 40
+Once upon a time to train, one of the same day, the "stine" is a very good
+way to the people of the world. The main lessons of the event were to be
+asked to live in the world. "But it's what
 ```
 
-11 tok/s on Intel i5 2019 8GB with Accelerate BLAS sgemv.
+12 tok/s on Intel i5 2019 8GB with Accelerate BLAS sgemv.
 
 ---
 
@@ -49,34 +54,49 @@ Standard Llama 3 nano. No GQA, no LoRA, no quantization at training time.
 
 Loss path (best):
 ```
-step 200 (warmup end): 6.57
-step 500:   5.85
-step 1500:  5.13
-step 3500:  3.95
-step 6800:  3.85
-step 8000:  3.16  ← stayed here
-step 15000: 3.16  (final)
+=== pretrain (peak lr 1.5e-4, 15K eff steps) ===
+step  200 (warmup end): 6.57
+step  500:              5.85
+step 3500:              3.95
+step 8000:              3.16  ← stayed here through end of pretrain
+step 15000 (final):     3.16
+
+=== CPT (peak lr 3e-5, 10K eff steps, resume from pretrain final) ===
+step  130:  5.34  (first new low after Chuck state reset)
+step  490:  5.14
+step 2400:  3.06
+step 4500:  2.68  ← held to end
+step 10000: 2.68  (final)
 ```
 
-Chinchilla ratio: 0.26 tokens/param (under-optimal). Each token seen ~335×. Memorization-leaning regime, but structure of language captured.
+Chinchilla ratio: 0.26 tokens/param (under-optimal). Each token seen ~700× across both phases. Memorization-leaning regime, but distribution structure of FineWeb-Edu captured (grammar, syntax, lexical clusters, common formats).
 
-## Generation samples
+## Generation samples (post-CPT, loss 2.68)
 
 `./infer_nanollama` + `generate.py` (SentencePiece encode/decode + C inference via stdin/stdout token IDs).
 
 ```
-prompt: "The meaning of life is"
-output: a means to be the only. A number of people who want to do a person
-        for a particular type can help the children to share their ability
-        to make a more enjoyable. It can also help to…
-
 prompt: "Once upon a time"
-output: when the word had had the way to be seen.
-        Capon, they had a good place of time and the two times for the heart
-        of a single day. What was this? The other person, like a woman, was the…
+output: to train, one of the same day, the "stine" is a very good way to the
+        people of the world. The main lessons of the event were to be asked
+        to live in the world. "But it's what
+
+prompt: "The capital of France is"
+output: The city of the Republic of the Irish is the capital of America. In the
+        northern part of the South. Its the British Parliament, the region is a
+        city of
+
+prompt: "The recipe for bread requires"
+output: only to keep the water stored. The temperature of a.c. An example of a
+        1000-inch, the 2022 earthquake is a heat that allows that fuel
 ```
 
-Coherence is local — grammar, lexical chunks, narrative tone work. Long-range reasoning is shallow (loss 3.16 ≈ 24 effective vocab choices per token). FineWeb-Edu register is visible: articles, dates, expository prose.
+CPT shift vs pretrain (loss 3.16 → 2.68, drop −0.48):
+- punctuation richer (quote marks, apostrophes appear)
+- thematic stays more on-topic before drifting (ex. "people of world" / "live in world" stays clustered)
+- transitions cleaner
+
+Coherence stays **local**: grammar, lexical chunks, register. Factual knowledge is zero (the model says France's capital is "Republic of Irish"). At 89M params trained on 23M tokens (Chinchilla ratio 0.26 — under-optimal by ~80×), the model captures distribution structure of FineWeb-Edu (articles, dates, expository prose) but no facts.
 
 ## Build
 
